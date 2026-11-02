@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+
+# Run outputs and research data must never be committed
+quadqc_out/
+demo_data/
+demo_out/
+*.nii
+*.nii.gz
+*.bval
+*.bvec
+*.dcm
+qc.json
+qc.pdf
+eddy_msr.txt
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+.Rhistory

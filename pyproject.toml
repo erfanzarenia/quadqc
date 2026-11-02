@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quadqc"
+description = "Cohort-level, traceable quality control for diffusion MRI from FSL eddy_quad outputs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+keywords = ["diffusion MRI", "quality control", "FSL", "eddy", "eddy_quad", "BIDS"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+dependencies = ["numpy>=1.22", "pandas>=1.5", "pyyaml>=6.0"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+imaging = ["nibabel>=4.0", "scipy>=1.8"]
+dev = ["pytest>=7", "ruff>=0.4", "nibabel>=4.0", "scipy>=1.8"]
+
+[project.scripts]
+quadqc = "quadqc.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "quadqc.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+quadqc = ["default_config.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["UP007"]  # Optional[...] kept for Python 3.9
