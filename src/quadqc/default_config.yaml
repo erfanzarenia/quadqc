@@ -1,0 +1,168 @@
+# quadqc configuration. Every value below is the default; a user config only
+# needs the keys it changes. Lists replace the default list entirely.
+# Relative paths resolve against the directory containing the config file.
+version: 1
+
+inputs:
+  quad_root: null            # directory searched for eddy_quad outputs (required)
+  participants: null         # BIDS participants.tsv or CSV: the expected roster
+  id_column: participant_id
+  exclusions: null           # table: participant_id, reason[, session_id]
+  supplementary: []          # extra metric tables: [{path: x.tsv, id_column: participant_id}]
+
+discovery:
+  # Named groups: participant (required), session (optional). Searched in the
+  # path relative to quad_root; the first match wins.
+  id_regex: '(?:^|/)(?P<participant>sub-[A-Za-z0-9]+)(?:/(?P<session>ses-[A-Za-z0-9]+))?'
+  exclude: []                # fnmatch patterns on relative paths, e.g. '*/excluded/*'
+  on_duplicate: error        # error | first (first sorted path; all are logged)
+  follow_symlinks: false
+  aliases: {}                # {sub-OLDLABEL: sub-NEWLABEL}
+  # Per-volume b-values for within-shell MSR scoring. If unset, the path recorded
+  # in qc.json is tried. Placeholders: {participant}, {session}.
+  bvals_glob: null
+
+decision:
+  convergence_min_domains: 3 # review flags in this many domains become a failure
+  min_relative_n: 20         # cohort size below which relative rules are not evaluated
+
+# See docs/metrics.md for justification. These are screening heuristics, not
+# validated exclusion criteria: review them against your own protocol.
+rules:
+  - metric: eddy_motion_abs_mm
+    domain: motion
+    direction: high
+    review: 1.0
+    severe: 2.0
+    unit: voxels
+    rationale: Mean absolute displacement from the reference volume, in voxels.
+  - metric: eddy_motion_rel_mm
+    domain: motion
+    direction: high
+    review: 0.5
+    severe: 1.0
+    unit: voxels
+    rationale: Mean volume-to-volume displacement, in voxels.
+  - metric: eddy_outliers_pct_tot
+    domain: outliers
+    direction: high
+    review: 2.0
+    severe: 5.0
+    rationale: Percentage of slices eddy classified as outliers and replaced.
+  - metric: eddy_snr_b0
+    domain: signal
+    direction: low
+    review: 10.0
+    severe: 5.0
+    rationale: b0 SNR; magnitude noise-floor effects dominate at very low values.
+  - metric: msr_max_z_within_shell
+    domain: residual
+    direction: high
+    review: 50.0
+    required: false
+    rationale: Worst within-shell volume residual; needs per-volume b-values.
+  - metric: eddy_n_pe_dirs
+    domain: distortion
+    direction: low
+    review: 2
+    rationale: One phase-encode direction means no reverse-PE susceptibility estimate.
+  - metric: 'eddy_cnr_b*'
+    kind: relative
+    domain: signal
+    direction: low
+    z: 5.0
+    rationale: CNR depends on protocol, so it is judged against the cohort.
+
+# Optional pathway for participants with no usable qc.json. Off by default; see
+# docs/fallback.md. It never yields a pass and never writes to any eddy_* metric.
+fallback:
+  enabled: false
+  required_metrics: [preproc_b0_snr_repeat, motion_rms_mean_mm, motion_rel_mean_mm]
+  rules:
+    - metric: bvecrot_rms_deg
+      domain: motion
+      direction: high
+      review: 1.0
+      severe: 2.0
+      required: false
+      rationale: Rotation eddy applied, measured from input and rotated b-vectors.
+    - metric: motion_rms_mean_mm
+      kind: relative
+      domain: motion
+      direction: high
+      z: 3.5
+      rationale: Translation-only estimate; its scale differs from eddy's, so cohort-relative.
+    - metric: motion_rel_mean_mm
+      kind: relative
+      domain: motion
+      direction: high
+      z: 3.5
+      rationale: Translation-only estimate; its scale differs from eddy's, so cohort-relative.
+    - metric: preproc_b0_snr_repeat
+      domain: signal
+      direction: low
+      review: 10.0
+      severe: 5.0
+      rationale: b0 SNR from repeated b0 volumes in the preprocessed series.
+
+scoring:
+  enabled: true
+  winsor: 5.0
+  min_slot_fraction: 0.4
+  min_slots: 2
+  min_families: 3
+  core_families: [motion, signal]
+  min_descriptive_families: 2
+  families:
+    motion:
+      label: Head motion and dropout
+      slots:
+        - name: motion_abs
+          metric: eddy_motion_abs_mm
+          direction: high
+          substitute: {metric: motion_rms_mean_mm, direction: high, kind: alternate-source}
+        - name: motion_rel
+          metric: eddy_motion_rel_mm
+          direction: high
+          substitute: {metric: motion_rel_mean_mm, direction: high, kind: alternate-source}
+        - name: motion_rot
+          metric: eddy_rot_mean_norm_deg
+          direction: high
+          substitute: {metric: bvecrot_rms_deg, direction: high, kind: alternate-source}
+        - name: outliers
+          metric: eddy_outliers_pct_tot
+          direction: high
+    signal:
+      label: Diffusion signal quality
+      slots:
+        - name: snr_b0
+          metric: eddy_snr_b0
+          direction: low
+          substitute: {metric: preproc_b0_snr_repeat, direction: low, kind: alternate-source}
+        - name: cnr
+          metric: eddy_cnr_lowest_shell
+          direction: low
+    correction:
+      label: Eddy-current and model residuals
+      slots:
+        - name: ec_residual
+          metric: eddy_ec_linear_std_norm
+          direction: high
+        - name: model_residual
+          metric: msr_max_z_within_shell
+          direction: high
+
+# Inputs for `quadqc imaging`, which writes a supplementary metric table. Globs are
+# relative to imaging.root (default: quad_root). Placeholders: {participant}, {session}.
+imaging:
+  root: null
+  jobs: 1
+  dwi: null                  # pre-eddy DWI (.bval/.bvec sidecars alongside)
+  mask: null                 # brain mask on the dwi grid
+  preprocessed_dwi: null
+  preprocessed_mask: null
+  input_bvec: null           # b-vectors given to eddy
+  rotated_bvec: null         # b-vectors rotated by eddy
+  fa: null                   # dtifit FA
+  l3: null                   # dtifit L3
+  t1_mask: null              # T1w brain mask
