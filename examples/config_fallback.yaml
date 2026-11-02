@@ -1,0 +1,22 @@
+# Optional fallback for participants without eddy_quad metrics: read docs/fallback.md first.
+# Compute surrogates for EVERYONE, because translation is judged against the cohort.
+#   quadqc imaging --config config_fallback.yaml --out surrogates.tsv
+#   quadqc run --config config_fallback.yaml --out qc_out
+inputs:
+  quad_root: /path/to/snakedwi_output/snakedwi
+  participants: /path/to/bids/participants.tsv
+  supplementary:
+    - {path: surrogates.tsv}
+fallback:
+  enabled: true
+# Globs follow snakedwi naming; relative ones start at quad_root, absolute ones are also fine.
+# Motion needs the DWI before eddy and a brain mask on the same grid. Rotation needs the
+# b-vectors given to eddy, which snakedwi keeps in its work directory if that was not deleted.
+imaging:
+  jobs: 4
+  dwi: '/path/to/bids/{participant}/dwi/*_dir-AP_*_dwi.nii.gz'
+  mask: '/path/to/masks/{participant}_meanb0_mask.nii.gz'
+  preprocessed_dwi: '{participant}/dwi/*_space-T1w_res-custom_desc-eddy_dwi.nii.gz'
+  preprocessed_mask: '{participant}/dwi/*_space-T1w_res-custom_desc-brain_mask.nii.gz'
+  input_bvec: '../work/{participant}/dwi/*_desc-degibbs_dwi.bvec'
+  rotated_bvec: '{participant}/dwi/*_desc-biascorr_dwi.bvec'

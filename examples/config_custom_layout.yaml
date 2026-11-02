@@ -1,0 +1,9 @@
+# A non-BIDS layout with labels such as study/subj007/visit2/eddy.qc/qc.json.
+# Participants become sub-subj007, sessions visit2. Scans set aside are skipped by path.
+inputs:
+  quad_root: /path/to/study
+  participants: /path/to/roster.csv
+  id_column: subject
+discovery:
+  id_regex: '(?P<participant>subj[0-9]+)/(?P<session>visit[0-9]+)'
+  exclude: ['*/rejected/*', '*/old_runs/*']

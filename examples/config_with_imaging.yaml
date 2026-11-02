@@ -1,0 +1,27 @@
+# Add output plausibility checks, computed by `quadqc imaging --out imaging.tsv`.
+# Globs follow snakedwi naming; adjust them to your pipeline.
+inputs:
+  quad_root: /path/to/snakedwi_output/snakedwi
+  supplementary:
+    - {path: imaging.tsv}
+imaging:
+  jobs: 4
+  preprocessed_dwi: '{participant}/dwi/*_space-T1w_res-custom_desc-eddy_dwi.nii.gz'
+  preprocessed_mask: '{participant}/dwi/*_space-T1w_res-custom_desc-brain_mask.nii.gz'
+  fa: '{participant}/dwi/*_desc-eddy_dtifit/dti_FA.nii.gz'
+  l3: '{participant}/dwi/*_desc-eddy_dtifit/dti_L3.nii.gz'
+  t1_mask: '{participant}/anat/*_desc-brain_mask.nii.gz'
+rules:
+  - {metric: eddy_motion_abs_mm, domain: motion, review: 1.0, severe: 2.0, unit: voxels}
+  - {metric: eddy_motion_rel_mm, domain: motion, review: 0.5, severe: 1.0, unit: voxels}
+  - {metric: eddy_outliers_pct_tot, domain: outliers, review: 2.0, severe: 5.0}
+  - {metric: eddy_snr_b0, domain: signal, direction: low, review: 10.0, severe: 5.0}
+  - {metric: msr_max_z_within_shell, domain: residual, review: 50.0, required: false}
+  - {metric: eddy_n_pe_dirs, domain: distortion, direction: low, review: 2}
+  - {metric: 'eddy_cnr_b*', kind: relative, domain: signal, direction: low, z: 5.0}
+  # Physically implausible outputs: failures whichever pathway applies.
+  - {metric: preproc_n_nonfinite, domain: validity, severe: 0, pathway: all}
+  - {metric: preproc_pct_negative_in_brain, domain: validity, review: 1.0, severe: 5.0, pathway: all}
+  - {metric: fa_pct_gt1, domain: validity, severe: 5.0, pathway: all}
+  - {metric: pct_negative_eigenvalue, domain: validity, severe: 5.0, pathway: all}
+  - {metric: reg_dice_dwimask_t1mask, domain: registration, direction: low, severe: 0.90, pathway: all}

@@ -1,0 +1,4 @@
+# Default rules and scores on a BIDS-style derivatives tree.
+inputs:
+  quad_root: /path/to/derivatives/my_pipeline
+  participants: /path/to/bids/participants.tsv

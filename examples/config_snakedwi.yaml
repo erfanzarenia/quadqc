@@ -1,0 +1,8 @@
+# snakedwi outputs: <quad_root>/sub-XX/qc/sub-XX_eddyqc/qc.json
+# snakedwi is not required by quadqc; this only points at where it puts things.
+inputs:
+  quad_root: /path/to/snakedwi_output/snakedwi
+  participants: /path/to/bids/participants.tsv
+discovery:
+  # The work directory named in qc.json is usually deleted, so point at the final b-values.
+  bvals_glob: '{participant}/dwi/*_desc-eddy_dwi.bval'
