@@ -20,7 +20,8 @@ MEANING = {
 
 
 def _md_table(table: pd.DataFrame) -> list[str]:
-    cells = table.fillna("").astype(str).replace(r"\|", r"\\|", regex=True)
+    cells = table.astype(object).where(table.notna(), "").astype(str)
+    cells = cells.apply(lambda column: column.str.replace("|", r"\|", regex=False))
     lines = ["| " + " | ".join(cells.columns) + " |", "|" + "---|" * len(cells.columns)]
     lines += ["| " + " | ".join(row) + " |" for row in cells.values.tolist()]
     return lines
