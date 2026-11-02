@@ -1,0 +1,114 @@
+# Thresholds and scoring of the study this package was developed on, used here as a
+# regression fixture. tests/test_legacy_regression.py checks the engine reproduces
+# that study's original implementation on synthetic data.
+decision:
+  convergence_min_domains: 3
+  min_relative_n: 20
+rules:
+  # Primary pathway
+  - {metric: eddy_motion_abs_mm, domain: motion, review: 1.5, severe: 3.0, required: false}
+  - {metric: eddy_motion_rel_mm, domain: motion, review: 0.75, severe: 1.5, required: false}
+  - {metric: eddy_outliers_pct_tot, domain: dropout/outliers, review: 2.0, severe: 5.0, required: false}
+  - {metric: eddy_snr_b0, domain: SNR/CNR, direction: low, review: 10.0, severe: 5.0, required: false}
+  - {metric: eddy_cnr_b1000, domain: SNR/CNR, direction: low, review: 1.2, severe: 0.8, required: false}
+  - {metric: eddy_cnr_b2000, domain: SNR/CNR, direction: low, review: 1.6, severe: 1.0, required: false}
+  - {metric: msr_max_z_within_shell, domain: residual artefact, review: 50.0, severe: 100.0, required: false}
+  - {metric: preproc_pct_negative_in_brain, domain: residual artefact, review: 1.0, severe: 5.0, required: false}
+  # Technical failures on either pathway
+  - {metric: eddy_n_pe_dirs, domain: susceptibility correction, direction: low, severe: 2, required: false, pathway: all}
+  - {metric: susc_dice_ap_pa, domain: susceptibility correction, direction: low, severe: 0.80, required: false, pathway: all}
+  - {metric: reg_dice_dwimask_t1mask, domain: registration, direction: low, severe: 0.90, required: false, pathway: all}
+  - {metric: preproc_n_nonfinite, domain: model validity, severe: 0, required: false, pathway: all}
+  - {metric: fa_pct_gt1, domain: model validity, severe: 5.0, required: false, pathway: all}
+  - {metric: pct_negative_eigenvalue, domain: model validity, severe: 5.0, required: false, pathway: all}
+  - {metric: conn_L_pct_seed_no_conn, domain: tractography, severe: 25.0, required: false, pathway: all}
+  - {metric: conn_R_pct_seed_no_conn, domain: tractography, severe: 25.0, required: false, pathway: all}
+  - {metric: seedmask_L_nvox, domain: tractography, direction: low, severe: 500, required: false, pathway: all}
+  - {metric: seedmask_R_nvox, domain: tractography, direction: low, severe: 500, required: false, pathway: all}
+  - {metric: yeo_n_missing_expected, domain: tractography, severe: 0, required: false, pathway: all}
+  - {metric: xstage_fa_corr, domain: stage consistency, direction: low, severe: 0.70, required: false, pathway: all}
+  - {metric: xstage_md_corr, domain: stage consistency, direction: low, severe: 0.70, required: false, pathway: all}
+  - {metric: xstage_mask_dice, domain: stage consistency, direction: low, severe: 0.95, required: false, pathway: all}
+  - {metric: conn_any_hemi_absent, domain: tractography, severe: 0, required: false, pathway: all}
+  - {metric: proc_outputs_incomplete, domain: tractography, severe: 0, required: false, pathway: all}
+  # Cohort-relative technical review
+  - {metric: warp_jac_brain_pct_negative, kind: relative, domain: technical, direction: high, z: 5.0, required: false}
+  - {metric: warp_jac_brain_largest_fold_vox, kind: relative, domain: technical, direction: high, z: 5.0, required: false}
+  - {metric: mni_gradcorr_t1w_tpl, kind: relative, domain: technical, direction: low, z: 5.0, required: false}
+  - {metric: mni_nmi_t1w_tpl, kind: relative, domain: technical, direction: low, z: 5.0, required: false}
+  - {metric: affine_scale_anisotropy, kind: relative, domain: technical, direction: high, z: 5.0, required: false}
+  - {metric: tt5_wm_over_gm, kind: relative, domain: technical, direction: both, z: 5.0, required: false}
+  - {metric: yeo_n_tiny_labels, kind: relative, domain: technical, direction: high, z: 5.0, required: false}
+fallback:
+  enabled: true
+  required_metrics: [preproc_b0_snr_repeat]
+  rules:
+    - {metric: motion_rms_mean_mm, domain: motion, review: 1.5, severe: 3.0, required: false}
+    - {metric: motion_rel_mean_mm, domain: motion, review: 0.75, severe: 1.5, required: false}
+    - {metric: pct_slice_outliers, domain: dropout/outliers, review: 2.0, severe: 5.0, required: false}
+    - {metric: n_vol_dropout, domain: dropout/outliers, review: 10.0, severe: 20.0, required: false}
+    - {metric: preproc_b0_snr_repeat, domain: SNR/CNR, direction: low, review: 10.0, severe: 5.0, required: false}
+    - {metric: cnr_b1000, domain: SNR/CNR, direction: low, review: 1.2, severe: 0.8, required: false}
+    - {metric: cnr_b2000, domain: SNR/CNR, direction: low, review: 1.6, severe: 1.0, required: false}
+    - {metric: bvecrot_rms_deg, domain: motion, review: 1.0, severe: 2.0, required: false}
+    - {metric: preproc_pct_negative_in_brain, domain: residual artefact, review: 1.0, severe: 5.0, required: false}
+scoring:
+  min_slot_fraction: 0.4
+  min_slots: 2
+  min_families: 6
+  core_families: [motion, signal, geometry]
+  min_descriptive_families: 2
+  families:
+    motion:
+      label: Head motion and dropout
+      slots:
+        - {name: motion_abs, metric: eddy_motion_abs_mm, substitute: {metric: motion_rms_mean_mm, kind: alternate-source}}
+        - {name: motion_rel, metric: eddy_motion_rel_mm, substitute: {metric: motion_rel_mean_mm, kind: alternate-source}}
+        - {name: motion_rot, metric: eddy_rot_mean_norm_deg, substitute: {metric: bvecrot_rms_deg, kind: equivalent}}
+        - {name: motion_outliers, metric: eddy_outliers_pct_tot}
+        - {name: slice_outliers, metric: pct_slice_outliers}
+    signal:
+      label: Diffusion signal quality
+      slots:
+        - {name: signal_snr_b0, metric: eddy_snr_b0, direction: low, substitute: {metric: preproc_b0_snr_repeat, direction: low, kind: equivalent}}
+        - {name: signal_cnr, metric: eddy_cnr_b1000, direction: low}
+    artefact:
+      label: Acquisition artefacts
+      slots:
+        - {name: ghost, metric: ghost_to_signal_b0}
+        - {name: ringing, metric: ringing_idx_pe}
+        - {name: spike, metric: spike_max_z}
+        - {name: drift, metric: b0_drift_pct, direction: both}
+        - {name: shading, metric: b0_shading_cv_pct}
+        - {name: ec_residual, metric: eddy_ec_linear_std_norm}
+        - {name: model_residual, metric: msr_max_z_within_shell}
+    geometry:
+      label: Geometric distortion and coverage
+      slots:
+        - {name: susc_quality, metric: susc_dice_ap_pa, direction: low}
+        - {name: susc_magnitude, metric: susc_pe_shift_max_mm}
+        - {name: coverage, metric: pct_brain_at_fov_edge}
+    anatomical:
+      label: Anatomical image quality
+      slots:
+        - {name: t1_contrast, metric: cjv}
+        - {name: t1_blur, metric: efc}
+        - {name: t1_inu, metric: inu_cv_pct}
+        - {name: t1_background, metric: qi1}
+        - {name: t1_snr, metric: snr_wm_air, direction: low}
+    registration:
+      label: Registration and spatial normalisation
+      slots:
+        - {name: reg_overlap, metric: reg_dice_dwimask_t1mask, direction: low}
+        - {name: reg_edge, metric: reg_edge_corr, direction: low}
+        - {name: mni_placement, metric: mni_centroid_offset_mm}
+        - {name: warp_folding, metric: warp_jac_brain_pct_negative}
+    model:
+      label: Diffusion model plausibility
+      slots:
+        - {name: tensor_validity, metric: pct_negative_eigenvalue}
+        - {name: negative_intensity, metric: preproc_pct_negative_in_brain}
+    connectome:
+      label: Tractography completeness
+      slots:
+        - {name: seed_connectivity, metric: conn_pct_seed_no_conn}
