@@ -42,6 +42,7 @@ column by default.
 | Fallback used eddy's thresholds on surrogates | Rotation plus cohort-relative rules | Eddy's thresholds do not transfer to surrogates; see [Fallback](fallback.md) |
 | Outlier and CNR surrogates in the fallback | Removed | Correspondence too poor to justify them |
 | Excluded rows in reference distributions | Left out | A known-bad scan should not shape thresholds |
+| Tied `qc_overall` values could be ranked by floating-point noise | Rounded before ranking, so ties share a percentile | Otherwise percentiles change with the pandas version |
 | Otsu mask if `bet` failed | Mask must be supplied | A silent mask change corrupts metrics |
 
 ## Not ported
