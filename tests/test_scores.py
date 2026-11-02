@@ -116,6 +116,17 @@ def test_substitute_never_overrides_a_present_primary():
     assert out.scores["n_substituted"].sum() == 0
 
 
+def test_tied_overall_scores_share_a_percentile():
+    cfg = _cfg(scoring=dict(min_slots=1, min_families=1, core_families=[], families={
+        "f": {"slots": [dict(name="a", metric="a")]},
+        "g": {"slots": [dict(name="b", metric="b")]}}))
+    a, b = np.linspace(0, 1, 21), np.linspace(3, 5, 21) ** 2
+    a[7], b[7] = a[3], b[3]  # two participants with identical metrics
+    out = scores.compute(_table(a=a, b=b), cfg).scores
+    assert out["qc_overall_pctile"].iloc[3] == out["qc_overall_pctile"].iloc[7]
+    assert out["qc_overall_pctile"].nunique() == 20
+
+
 def test_effective_dimension():
     a = pd.Series(np.arange(30.0))
     assert scores.effective_dimension(pd.DataFrame({"a": a, "b": a * 2})) == pytest.approx(1.0)

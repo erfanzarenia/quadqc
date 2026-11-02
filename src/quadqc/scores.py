@@ -142,7 +142,9 @@ def compute(metrics: pd.DataFrame, cfg: Config) -> Scores:
 
     fam = pd.DataFrame(fam_scores, index=data.index)
     n_families = fam.notna().sum(axis=1)
-    mean = fam.mean(axis=1, skipna=True)
+    # Family scores are rounded, so exact ties are common; rounding here stops floating-point
+    # noise from breaking them differently between numerical library versions.
+    mean = fam.mean(axis=1, skipna=True).round(9)
     complete = n_families >= scoring.min_families
     for core in scoring.core_families:
         complete &= fam[f"qc_{core}"].notna()
