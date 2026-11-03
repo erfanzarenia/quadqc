@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "quadqc"
 description = "Cohort-level, traceable quality control for diffusion MRI from FSL eddy_quad outputs."
 readme = "README.md"
+authors = [{ name = "Erfan Zarenia" }]
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -21,6 +22,9 @@ dynamic = ["version"]
 [project.optional-dependencies]
 imaging = ["nibabel>=4.0", "scipy>=1.8"]
 dev = ["pytest>=7", "ruff>=0.4", "nibabel>=4.0", "scipy>=1.8"]
+
+[project.urls]
+Repository = "https://github.com/erfanzarenia/quadqc"
 
 [project.scripts]
 quadqc = "quadqc.cli:main"
