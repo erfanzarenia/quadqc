@@ -27,7 +27,7 @@ Requires Python 3.9 or later. FSL is not needed to run `quadqc`, only to produce
 `eddy_quad` outputs it reads.
 
 ```bash
-git clone <repository-url> quadqc
+git clone https://github.com/erfanzarenia/quadqc.git
 ```
 
 ```bash
